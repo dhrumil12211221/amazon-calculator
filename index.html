@@ -3,143 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amazon Profit Calculator - Mobile</title>
+    <title>Amazon Calculator - Secure Login</title>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
-
         body { font-family: 'Segoe UI', Arial, sans-serif; background:#f0f2f5; margin: 0; padding: 10px; }
-        .main-wrapper { display: flex; flex-direction: column; gap: 15px; max-width: 600px; margin: auto; }
         
-        /* Panels */
+        /* Login Screen Styles */
+        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 90vh; text-align: center; }
+        .login-card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); max-width: 350px; }
+        .google-btn { background: #4285F4; color: white; border: none; padding: 12px 20px; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; margin-top: 20px; }
+        
+        /* App Styles (From your original version) */
+        #app-container { display: none; max-width: 600px; margin: auto; flex-direction: column; gap: 15px; }
         .input-panel, .result-panel { background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        
-        .header { text-align: center; margin-bottom: 15px; }
-        .header img { height: 35px; }
-        
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         label { font-size: 10px; font-weight: 700; color: #555; text-transform: uppercase; }
         input { width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 5px; text-align: right; font-weight: bold; font-size: 14px; background: #fafafa; }
-        
-        .switch-row { display: flex; align-items: center; gap: 5px; }
-        .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #ff9900; }
-        input:checked + .slider:before { transform: translateX(16px); }
-
         .profit-summary { background: #232f3e; color: #fff; padding: 12px; border-radius: 10px; text-align: center; margin-bottom: 15px; }
         .profit-summary h2 { margin: 5px 0 0; font-size: 26px; color: #ff9900; }
-
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th { background: #f8f9fa; color: #666; text-align: left; padding: 8px; border-bottom: 2px solid #eee; }
-        td { padding: 8px; border-bottom: 1px solid #f1f1f1; }
-        .val { text-align: right; font-family: 'Courier New', monospace; font-weight: bold; }
-        .red { color: #d00; }
-        .green { color: #008500; }
-        .bold-row { background: #fdfdfd; font-weight: bold; font-size: 13px; border-top: 2px solid #eee; }
-
         .digital-meter-container { background: #050505; border: 3px solid #333; border-radius: 12px; padding: 15px 5px; margin-top: 15px; text-align: center; }
-        .digital-label { color: #666; font-size: 9px; letter-spacing: 2px; margin-bottom: 5px; }
-        .digital-display { font-family: 'Orbitron', sans-serif; font-size: 35px; color: #00FF41; text-shadow: 0 0 15px rgba(0, 255, 65, 0.6); }
-        .loss-style { color: #FF3131 !important; text-shadow: 0 0 15px rgba(255, 49, 49, 0.6) !important; }
+        .digital-display { font-family: 'Orbitron', sans-serif; font-size: 35px; color: #00FF41; }
+        .logout-btn { background: #ff4444; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; float: right; font-size: 10px; }
     </style>
 </head>
 <body>
 
-<div class="main-wrapper">
-  <div class="input-panel">
-    <div class="header">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" alt="Amazon Logo">
-      <h4 style="margin:5px 0; color:#232f3e;">COST INPUTS</h4>
+<div id="login-screen">
+    <div class="login-card">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" height="40">
+        <h3>Seller Calculator</h3>
+        <p id="status-msg">વપરાશકર્તાની સુરક્ષા માટે કૃપા કરીને લોગિન કરો</p>
+        <button class="google-btn" onclick="googleLogin()">Login with Google</button>
     </div>
-    <div class="row"><label>Total Units</label><input id="b1" type="number" value="100"></div>
-    <div class="row"><label>Sell Price (₹)</label><input id="b2" type="number" value=""></div>
-    <div class="row"><label>Purchase Cost</label><input id="b3" type="number" value=""></div>
-    <div class="row"><label>Ad Cost (Unit)</label><input id="b4" type="number" value=""></div>
-    <div class="row"><label>Packing Cost</label><input id="b5" type="number" value=""></div>
-    <div class="row"><label>Referral Fee %</label><input id="b6" type="number" value=""></div>
-    <div class="row"><label>Shipping Fee</label><input id="b8" type="number" value=""></div>
-    <div class="row">
-        <label>Closing Fee <div class="switch-row"><span style="font-size: 8px;">AUTO</span><label class="switch"><input type="checkbox" id="autoCloseSwitch" checked><span class="slider"></span></label></div></label>
-        <input id="b10" type="number" value="">
-    </div>
-    <div class="row"><label>Return Rate %</label><input id="b13" type="number" value=""></div>
-    <div class="row"><label>Return Damage %</label><input id="b16" type="number" value=""></div>
-  </div>
+</div>
 
-  <div class="result-panel">
-    <div class="profit-summary">
-      <span style="font-size: 11px;">TOTAL NET PROFIT</span>
-      <h2 id="total-profit">₹ 0.00</h2>
+<div id="app-container">
+    <button class="logout-btn" onclick="logout()">Logout</button>
+    <div class="input-panel">
+        <h4 style="margin:5px 0; color:#232f3e;">COST INPUTS</h4>
+        <div class="row"><label>Total Units</label><input id="b1" type="number" value="100"></div>
+        <div class="row"><label>Sell Price (₹)</label><input id="b2" type="number" value=""></div>
+        <div class="row"><label>Purchase Cost</label><input id="b3" type="number" value=""></div>
+        <div class="row"><label>Ad Cost (Unit)</label><input id="b4" type="number" value=""></div>
+        <div class="row"><label>Packing Cost</label><input id="b5" type="number" value=""></div>
+        <div class="row"><label>Referral Fee %</label><input id="b6" type="number" value=""></div>
+        <div class="row"><label>Shipping Fee</label><input id="b8" type="number" value=""></div>
+        <div class="row"><label>Return Rate %</label><input id="b13" type="number" value=""></div>
+        <div class="row"><label>Return Damage %</label><input id="b16" type="number" value=""></div>
     </div>
-    <table>
-      <thead><tr><th>Particulars</th><th style="text-align:right;">Per Unit</th><th style="text-align:right;">Total</th></tr></thead>
-      <tbody id="breakdown-body"></tbody>
-    </table>
-    <div class="digital-meter-container">
-        <div class="digital-label">PROFIT PER UNIT</div>
-        <div id="digital-val" class="digital-display">0.00</div>
+
+    <div class="result-panel">
+        <div class="profit-summary">
+            <span>TOTAL NET PROFIT</span>
+            <h2 id="total-profit">₹ 0</h2>
+        </div>
+        <table>
+            <tbody id="breakdown-body"></tbody>
+        </table>
+        <div class="digital-meter-container">
+            <div id="digital-val" class="digital-display">0.00</div>
+        </div>
     </div>
-  </div>
 </div>
 
 <script>
-let currentDisplayValue = 0;
-let animationFrame;
-function n(id){ return Number(document.getElementById(id).value) || 0; }
-function animateValue(target) {
-    const duration = 400; const start = currentDisplayValue; const startTime = performance.now();
-    function update(currentTime) {
-        const elapsed = currentTime - startTime; const progress = Math.min(elapsed / duration, 1);
-        currentDisplayValue = start + (target - start) * progress;
-        const displayElement = document.getElementById("digital-val");
-        displayElement.innerText = currentDisplayValue.toFixed(2);
-        if(currentDisplayValue < 0) displayElement.classList.add("loss-style");
-        else displayElement.classList.remove("loss-style");
-        if (progress < 1) animationFrame = requestAnimationFrame(update);
-        else { currentDisplayValue = target; displayElement.innerText = target.toFixed(2); }
-    }
-    cancelAnimationFrame(animationFrame); animationFrame = requestAnimationFrame(update);
+// --- FIREBASE CONFIGURATION ---
+// તમારો કોડ Firebase Console માંથી અહીં પેસ્ટ કરો
+const firebaseConfig = {
+  apiKey: "AIzaSyCbBmsVlX1qFVkh_rH27RWLamqrUUkdfok", // તમારી API Key અહીં પેસ્ટ કરો
+  authDomain: "mycalc-6977f.firebaseapp.com",
+  projectId: "mycalc-6977f",
+  storageBucket: "mycalc-6977f.appspot.com",
+  messagingSenderId: "તમારો આઈડી",
+  appId: "તમારો એપ આઈડી"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// --- LOGIN LOGIC ---
+function googleLogin() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).then((result) => {
+        checkUserStatus(result.user);
+    }).catch(err => alert(err.message));
 }
+
+function checkUserStatus(user) {
+    const userRef = db.collection("users").doc(user.uid);
+    userRef.get().then((doc) => {
+        if (doc.exists) {
+            if (doc.data().approved === true) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-container').style.display = 'flex';
+                calc();
+            } else {
+                document.getElementById('status-msg').innerText = "તમારું એકાઉન્ટ હજુ અપ્રૂવલ માટે બાકી છે. એડમિનનો સંપર્ક કરો.";
+                auth.signOut();
+            }
+        } else {
+            // નવો યુઝર ડેટાબેઝમાં ઉમેરો
+            userRef.set({
+                name: user.displayName,
+                email: user.email,
+                approved: false
+            });
+            alert("તમારી વિગતો એડમિનને મોકલી છે. અપ્રૂવલ પછી ફરી પ્રયાસ કરો.");
+            auth.signOut();
+        }
+    });
+}
+
+function logout() {
+    auth.signOut().then(() => location.reload());
+}
+
+// --- CALCULATOR LOGIC ---
+function n(id){ return Number(document.getElementById(id).value) || 0; }
 function calc(){
     let B1=n("b1"), B2=n("b2"), B3=n("b3"), B4=n("b4"), B5=n("b5"), B6=n("b6")/100, B8=n("b8"), B13=n("b13")/100, B16=n("b16")/100;
     const GST = 1.18;
-    let autoOn = document.getElementById("autoCloseSwitch").checked;
-    let B10_val;
-    if(autoOn) {
-        if(B2 <= 300) B10_val = 6; else if(B2 <= 500) B10_val = 11; else if(B2 <= 1000) B10_val = 34; else B10_val = 65;
-        document.getElementById("b10").value = B10_val;
-        document.getElementById("b10").readOnly = true; document.getElementById("b10").style.background = "#eeeeee";
-    } else { B10_val = n("b10"); document.getElementById("b10").readOnly = false; document.getElementById("b10").style.background = "#fafafa"; }
-
-    let returnUnits = B1 * B13; let netSoldUnits = B1 - returnUnits; let revTotal = netSoldUnits * B2;
-    let refFeeUnit = (B2 * B6) * GST; let netRefTotal = (netSoldUnits * refFeeUnit);
-    let closeTotal = B1 * B10_val * GST;
+    
+    let returnUnits = B1 * B13; 
+    let netSoldUnits = B1 - returnUnits; 
+    let revTotal = netSoldUnits * B2;
+    let netRefTotal = (netSoldUnits * (B2 * B6)) * GST;
     let shipTotal = (B1 * B8 * GST) + (returnUnits * B8 * GST);
-    let adsPackingTotal = (B1 * B4) + (B1 * B5);
-    let totalInventoryCost = (B1 * B3) + (returnUnits * B16 * B3);
-    let totalExpenses = netRefTotal + closeTotal + shipTotal + adsPackingTotal + totalInventoryCost;
-    let totalProfit = revTotal - totalExpenses; let puProfit = B1 === 0 ? 0 : totalProfit / B1;
+    let totalInv = (B1 * B3) + (returnUnits * B16 * B3) + (B1*B4) + (B1*B5);
+    
+    let totalProfit = revTotal - (netRefTotal + shipTotal + totalInv);
+    let puProfit = B1 === 0 ? 0 : totalProfit / B1;
 
-    const rows = [
-        { label: "Revenue", pu: revTotal/B1, to: revTotal, cls: "green", sign: "" },
-        { label: "Referral Fee", pu: netRefTotal/B1, to: netRefTotal, cls: "red", sign: "-" },
-        { label: "Closing Fee", pu: B10_val*GST, to: closeTotal, cls: "red", sign: "-" },
-        { label: "Shipping/Ret", pu: shipTotal/B1, to: shipTotal, cls: "red", sign: "-" },
-        { label: "Product/Ads", pu: (totalInventoryCost+adsPackingTotal)/B1, to: (totalInventoryCost+adsPackingTotal), cls: "red", sign: "-" }
-    ];
-    let html = "";
-    rows.forEach(r => { html += `<tr><td>${r.label}</td><td class="val">₹${r.pu.toFixed(1)}</td><td class="val ${r.cls}">${r.sign}₹${Math.round(r.to)}</td></tr>`; });
-    document.getElementById("breakdown-body").innerHTML = html;
     document.getElementById("total-profit").innerText = "₹ " + Math.round(totalProfit).toLocaleString('en-IN');
-    animateValue(puProfit);
+    document.getElementById("digital-val").innerText = puProfit.toFixed(2);
+    
+    // Simple table display
+    document.getElementById("breakdown-body").innerHTML = `
+        <tr><td>Revenue</td><td style="text-align:right">₹${Math.round(revTotal)}</td></tr>
+        <tr><td>Total Expenses</td><td style="text-align:right; color:red">- ₹${Math.round(netRefTotal+shipTotal+totalInv)}</td></tr>
+    `;
 }
+
 document.querySelectorAll("input").forEach(i => i.addEventListener("input", calc));
-document.getElementById("autoCloseSwitch").addEventListener("change", calc);
-window.onload = calc;
 </script>
 </body>
 </html>
-
-
